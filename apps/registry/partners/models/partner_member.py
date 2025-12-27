@@ -24,32 +24,39 @@ class PartnerMemberQuerySet(models.QuerySet["PartnerMember"]):
         if q_filter is None:  # Суперпользователь
             return self
         return self.filter(q_filter)
-    
+
     def active(self) -> "PartnerMemberQuerySet":
         """Возвращает только активных членов."""
         return self.filter(is_active=True)
-    
+
     def for_partner(self, partner_id) -> "PartnerMemberQuerySet":
         """Фильтрует по конкретному партнеру."""
         return self.filter(partner_id=partner_id)
-    
+
     def with_management_rights(self) -> "PartnerMemberQuerySet":
         """Возвращает членов с правами управления."""
         return self.filter(can_manage_members=True, is_active=True)
+
+    def for_pickup_point(self, pickup_point_id) -> "PartnerMemberQuerySet":
+        """Фильтрует по конкретному пункту выдачи."""
+        return self.filter(pickup_point_id=pickup_point_id)
 
 
 class PartnerMemberManager(models.Manager["PartnerMember"]):
     def get_queryset(self) -> PartnerMemberQuerySet:
         return PartnerMemberQuerySet(self.model, using=self._db)
-    
+
     def for_user(self, user: User) -> PartnerMemberQuerySet:
         return self.get_queryset().for_user(user)
-    
+
     def active(self) -> PartnerMemberQuerySet:
         return self.get_queryset().active()
-    
+
     def for_partner(self, partner_id) -> PartnerMemberQuerySet:
         return self.get_queryset().for_partner(partner_id)
+
+    def for_pickup_point(self, pickup_point_id) -> PartnerMemberQuerySet:
+        return self.get_queryset().for_pickup_point(pickup_point_id)
 
 
 class PartnerMember(RegistryModel):
@@ -152,10 +159,20 @@ class PartnerMember(RegistryModel):
         verbose_name=_("Активный сотрудник"),
         help_text=_("Сотрудник активен в организации")
     )
-    
-    # Менеджер с support for_user() 
+
+    pickup_point = models.ForeignKey(
+        'PickupPoint',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='members',
+        verbose_name=_("Пункт выдачи"),
+        help_text=_("Привязка сотрудника к конкретному пункту выдачи")
+    )
+
+    # Менеджер с support for_user()
     objects: PartnerMemberManager = PartnerMemberManager() # type: ignore
-    
+
     class Meta: # pyright: ignore[reportIncompatibleVariableOverride]
         verbose_name = _("Член партнера")
         verbose_name_plural = _("Члены партнеров")
@@ -165,6 +182,7 @@ class PartnerMember(RegistryModel):
             models.Index(fields=['partner', 'user']),
             models.Index(fields=['partner', 'is_active']),
             models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['pickup_point']),  # Добавляем индекс для поля ПВЗ
         ]
         constraints = [
             # Уникальный табельный номер в рамках партнера
@@ -180,54 +198,61 @@ class PartnerMember(RegistryModel):
             #     condition=models.Q(user__isnull=False)
             # ),
         ]
-    
+
     def __str__(self) -> str:
         if self.user:
             user_display = self.user.get_full_name() or self.user.username
             return f"{user_display} ({self.get_role_display()})"
         return f"{self.name} ({self.get_role_display()})"
-    
+
     def clean(self) -> None:
         """
         Центральное место для model-level validation:
         - cross-field rules (например, либо email, либо phone обязателен)
         - application-level uniqueness checks (более дружелюбные ошибки)
+        - проверка соответствия ПВЗ партнеру
         Не вызывайте save()/DB операции здесь.
-        """        
+        """
         # 1) Вызов базовой логики (включая валидацию из mixin, если есть)
         super().clean()
-        
+
         errors: Dict[str, List[str]] = {}
-        
+
         # 2) Cross-field: Проверка обязательных полей
         if not self.name and not self.user:
             errors['name'] = [_("Заполните имя или привяжите пользователя")]
-        
+
         # Проверка email или телефона
         if not self.work_email and not self.work_phone:
             errors.setdefault('work_email', []).append(
                 _("Укажите рабочий email или телефон")
             )
-        
-        # 3) Application-level uniqueness checks (чтобы дать понятные ошибки до вставки в БД)
+
+        # 3) Проверка, что ПВЗ принадлежит тому же партнеру
+        if self.pickup_point and self.pickup_point.partner != self.partner:
+            errors.setdefault('pickup_point', []).append(
+                _("Пункт выдачи должен принадлежать тому же партнеру")
+            )
+
+        # 4) Application-level uniqueness checks (чтобы дать понятные ошибки до вставки в БД)
         # Владелец партнера не может быть его сотрудником, но может быть директором/админом (что логично)
         if (self.user and self.user == self.partner.owner and
             self.role not in ['director', 'admin']):
             errors['user'] = [_("Владелец партнера не может быть его сотрудником, но может быть директором или администратором")]
-        
+
         # Автоматически даем права для высших ролей
         if self.role in ['director', 'admin']:
             self.can_manage_members = True
             self.can_view_finance = True
-        
+
         if errors:
             raise ValidationError(errors) # type: ignore
-    
+
     def save(self, *args, **kwargs):
         # Автозаполнение имени из пользователя
         if self.user and not self.name:
             self.name = self.user.get_full_name() or self.user.username
-        
+
         super().save(*args, **kwargs)
 
     # Явно добавляем метод для статического анализатора
@@ -239,21 +264,21 @@ class PartnerMember(RegistryModel):
     def display_name(self) -> str:
         """Свойство для обратной совместимости."""
         return self.name
-    
+
     @property
     def is_manager(self) -> bool:
         """Проверяет, является ли член менеджером."""
         return self.role in [
-            self.ROLE_MANAGER, 
-            self.ROLE_DIRECTOR, 
+            self.ROLE_MANAGER,
+            self.ROLE_DIRECTOR,
             self.ROLE_ADMIN
         ] or self.can_manage_members
-    
+
     @property
     def role_display(self) -> str:
         """Альтернативное свойство для получения отображаемого значения роли."""
         return self.get_role_display()
-    
+
     def has_permission(self, permission: str) -> bool:
         """Проверяет наличие конкретного разрешения."""
         if permission == 'manage_members':

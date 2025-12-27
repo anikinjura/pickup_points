@@ -194,6 +194,105 @@ def check_partner_application_access(user: User, application) -> bool:
     # Пользователь имеет доступ к своей заявке
     return application.user == user
 
+
+# ==================== УТИЛИТНЫЕ ФУНКЦИИ ДЛЯ ДОСТУПА К PICKUP POINT ====================
+def get_pickup_point_filter_for_user(user: User) -> Optional[Q]:
+    """
+    Возвращает Q-объект для фильтрации QuerySet пунктов выдачи.
+    None = без фильтрации (суперпользователь).
+    Q(pk__in=[]) = нет записей (неаутентифицированный).
+    """
+    if user is None or not user.is_authenticated:
+        return Q(pk__in=[])
+
+    if user.is_superuser or user.is_staff:
+        return None
+
+    # Владелец партнера видит ПВЗ своих партнеров
+    # Члены партнера видят ПВЗ своего партнера
+    q_filter = Q(partner__owner=user)
+
+    # Добавляем ПВЗ, к которым имеют доступ члены партнера
+    # ЛОКАЛЬНЫЙ импорт для избежания циклических зависимостей
+    from apps.registry.partners.models import PartnerMember
+
+    partner_members = PartnerMember.objects.filter(
+        user=user,
+        is_active=True
+    ).select_related('partner')
+
+    for member in partner_members:
+        q_filter |= Q(partner=member.partner)
+
+    return q_filter
+
+
+def check_pickup_point_access(user: User, pickup_point) -> bool:
+    """
+    Проверяет доступ пользователя к конкретному ПВЗ.
+    """
+    # ЛОКАЛЬНЫЙ импорт для избежания циклических зависимостей
+    from apps.registry.partners.models import PartnerMember
+
+    if user is None or not user.is_authenticated:
+        return False
+
+    if user.is_superuser or user.is_staff:
+        return True
+
+    # Владелец партнера имеет доступ к ПВЗ своего партнера
+    if pickup_point.partner.owner == user:
+        return True
+
+    # Активные члены партнера имеют доступ к ПВЗ партнера
+    return PartnerMember.objects.filter(
+        user=user,
+        partner=pickup_point.partner,
+        is_active=True
+    ).exists()
+
+
+def check_pickup_point_crud_access(user: User, pickup_point) -> bool:
+    """
+    Проверяет права на CRUD операции с ПВЗ.
+    """
+    if user is None or not user.is_authenticated:
+        return False
+
+    if user.is_superuser or user.is_staff:
+        return True
+
+    # Владелец партнера может CRUD ПВЗ своего партнера
+    if pickup_point.partner.owner == user:
+        return True
+
+    return False
+
+
+def validate_partner_pickup_point_access(user: User, partner) -> bool:
+    """
+    Проверяет, может ли пользователь создавать/обновлять ПВЗ для партнера.
+    Включает проверку прав доступа к партнеру и статуса партнера.
+    """
+    # Проверяем права доступа к партнеру
+    if not check_partner_access(user, partner):
+        return False
+
+    # Проверяем статус партнера
+    if not partner.validated:
+        return False
+
+    return True
+
+
+def validate_partner_member_pickup_point_relationship(partner, pickup_point) -> bool:
+    """
+    Проверяет, что пункт выдачи принадлежит тому же партнеру, что и член партнера.
+    """
+    if pickup_point and pickup_point.partner != partner:
+        return False
+    return True
+
 # ==================== DRF PERMISSION КЛАССЫ ====================
 class IsOwnerOrAdmin(permissions.BasePermission):
     """
@@ -208,14 +307,25 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     def has_object_permission(self, request, view, obj): # type: ignore
         # Явно приводим к bool и игнорируем проверку типов
         return bool(check_partner_access(request.user, obj))
-    
+
 class IsPartnerMemberOwnerOrAdmin(permissions.BasePermission):
     """
     Разрешает доступ владельцу партнера, самому члену, менеджеру с правами или суперпользователю.
     """
-    
+
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated
-    
+
     def has_object_permission(self, request, view, obj): # type: ignore
         return bool(check_partner_member_access(request.user, obj))
+
+class IsPickupPointOwnerOrAdmin(permissions.BasePermission):
+    """
+    Разрешает CRUD доступ владельцу партнера, staff или superuser.
+    """
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj): # type: ignore
+        return bool(check_pickup_point_crud_access(request.user, obj))

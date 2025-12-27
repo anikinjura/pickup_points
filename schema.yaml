@@ -1,0 +1,2916 @@
+openapi: 3.0.3
+info:
+  title: Partner Registry API
+  version: 1.0.0
+  description: API для управления партнерами и их сотрудниками
+paths:
+  /api/:
+    get:
+      operationId: api_root
+      description: Корневой эндпоинт API, возвращает список доступных эндпоинтов
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+          description: ''
+  /api/applications/:
+    get:
+      operationId: applications_list
+      description: Упрощенный API для заявок.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - applications
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPartnerApplicationList'
+          description: ''
+    post:
+      operationId: applications_create
+      description: Создание заявки с простым ответом.
+      tags:
+      - applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerApplicationCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerApplicationCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerApplicationCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerApplicationCreate'
+          description: ''
+  /api/applications/{id}/:
+    get:
+      operationId: applications_retrieve
+      description: Упрощенный API для заявок.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Заявка партнера.
+        required: true
+      tags:
+      - applications
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerApplication'
+          description: ''
+    put:
+      operationId: applications_update
+      description: Упрощенный API для заявок.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Заявка партнера.
+        required: true
+      tags:
+      - applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerApplicationUserUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerApplicationUserUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerApplicationUserUpdateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerApplicationUserUpdate'
+          description: ''
+    patch:
+      operationId: applications_partial_update
+      description: Обновление заявки.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Заявка партнера.
+        required: true
+      tags:
+      - applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerApplicationUserUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerApplicationUserUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerApplicationUserUpdateRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerApplicationUserUpdate'
+          description: ''
+    delete:
+      operationId: applications_destroy
+      description: Упрощенный API для заявок.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Заявка партнера.
+        required: true
+      tags:
+      - applications
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/google/google/:
+    post:
+      operationId: auth_google_google_create
+      description: |-
+        Этот эндпоинт принимает Google ID токен, валидирует его с помощью Google API, и возвращает Django API токен для дальнейшей аутентификации в системе.
+
+        Если пользователя с указанным email нет в системе, создается новый пользователь. Если пользователь уже существует, возвращается существующий токен.
+      summary: Аутентификация через Google
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_token:
+                  type: string
+                  description: Google ID токен, полученный от Google Sign-In
+                access_token:
+                  type: string
+                  description: Google Access токен (опционально, для дополнительных
+                    проверок)
+              required:
+              - id_token
+              example:
+                id_token: eyJhbGciOiJSUzI1NiIsImtpZCI6ImY5OTQxM...
+                access_token: ya29.a0ARrdaM8...
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                    description: Успешность аутентификации
+                  token:
+                    type: string
+                    example: 3d2e47532942e5935a3f81e34752891234567890
+                    description: Django API токен для дальнейшей аутентификации
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: user@example.com
+                      username:
+                        type: string
+                        example: user@example.com
+                      first_name:
+                        type: string
+                        example: Иван
+                      last_name:
+                        type: string
+                        example: Иванов
+                    description: Информация о пользователе
+                  is_new_user:
+                    type: boolean
+                    example: true
+                    description: Является ли пользователь новым
+                  email_verified:
+                    type: boolean
+                    example: true
+                    description: Подтвержден ли email через Google
+              examples:
+                УспешнаяАутентификацияНовогоПользователя:
+                  value:
+                    success: true
+                    token: 3d2e47532942e5935a3f81e34752891234567890
+                    user:
+                      id: 1
+                      email: user@example.com
+                      username: user@example.com
+                      first_name: Иван
+                      last_name: Иванов
+                    is_new_user: true
+                    email_verified: true
+                  summary: Успешная аутентификация нового пользователя
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'Неверный токен: Wrong number of segments in token'
+                    description: Описание ошибки
+              examples:
+                НеверныйТокен:
+                  value:
+                    error: 'Неверный токен: Wrong number of segments in token'
+                  summary: Неверный токен
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'Ошибка аутентификации Google: ...'
+                    description: Описание ошибки аутентификации
+          description: ''
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: |-
+        Check the credentials and return the REST Token
+        if the credentials are valid and authenticated.
+        Calls Django Auth login method to register User ID
+        in Django session framework
+
+        Accept the following POST parameters: username, password
+        Return the REST Framework Token Object's key.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: |-
+        Calls Django logout method and delete the Token object
+        assigned to the current User object.
+
+        Accepts/Returns nothing.
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/auth/password/change/:
+    post:
+      operationId: auth_password_change_create
+      description: |-
+        Calls Django Auth SetPasswordForm save method.
+
+        Accepts the following POST parameters: new_password1, new_password2
+        Returns the success/fail message.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/auth/password/reset/:
+    post:
+      operationId: auth_password_reset_create
+      description: |-
+        Calls Django Auth PasswordResetForm save method.
+
+        Accepts the following POST parameters: email
+        Returns the success/fail message.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/auth/password/reset/confirm/:
+    post:
+      operationId: auth_password_reset_confirm_create
+      description: |-
+        Password reset e-mail link is confirmed, therefore
+        this resets the user's password.
+
+        Accepts the following POST parameters: token, uid,
+            new_password1, new_password2
+        Returns the success/fail message.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/auth/user/:
+    get:
+      operationId: auth_user_retrieve
+      description: |-
+        Reads and updates UserModel fields
+        Accepts GET, PUT, PATCH methods.
+
+        Default accepted fields: username, first_name, last_name
+        Default display fields: pk, username, email, first_name, last_name
+        Read-only fields: pk, email
+
+        Returns UserModel fields.
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetails'
+          description: ''
+    put:
+      operationId: auth_user_update
+      description: |-
+        Reads and updates UserModel fields
+        Accepts GET, PUT, PATCH methods.
+
+        Default accepted fields: username, first_name, last_name
+        Default display fields: pk, username, email, first_name, last_name
+        Read-only fields: pk, email
+
+        Returns UserModel fields.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDetailsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserDetailsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserDetailsRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetails'
+          description: ''
+    patch:
+      operationId: auth_user_partial_update
+      description: |-
+        Reads and updates UserModel fields
+        Accepts GET, PUT, PATCH methods.
+
+        Default accepted fields: username, first_name, last_name
+        Default display fields: pk, username, email, first_name, last_name
+        Read-only fields: pk, email
+
+        Returns UserModel fields.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserDetailsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserDetailsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserDetailsRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetails'
+          description: ''
+  /api/partner-members/:
+    get:
+      operationId: partner_members_list
+      description: API для управления членами партнеров.
+      parameters:
+      - in: query
+        name: can_manage_members
+        schema:
+          type: boolean
+      - in: query
+        name: can_view_finance
+        schema:
+          type: boolean
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: name
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: partner
+        schema:
+          type: number
+      - in: query
+        name: role
+        schema:
+          type: string
+          title: Роль в партнерской организации
+          enum:
+          - accountant
+          - admin
+          - director
+          - employee
+          - manager
+        description: |-
+          Определяет уровень доступа и права в системе
+
+          * `employee` - Сотрудник
+          * `manager` - Менеджер
+          * `director` - Директор
+          * `accountant` - Бухгалтер
+          * `admin` - Администратор партнера
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: work_email
+        schema:
+          type: string
+      tags:
+      - partner-members
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPartnerMemberList'
+          description: ''
+    post:
+      operationId: partner_members_create
+      description: API для управления членами партнеров.
+      tags:
+      - partner-members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerMember'
+          description: ''
+  /api/partner-members/{id}/:
+    get:
+      operationId: partner_members_retrieve
+      description: API для управления членами партнеров.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Член партнера.
+        required: true
+      tags:
+      - partner-members
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerMember'
+          description: ''
+    put:
+      operationId: partner_members_update
+      description: API для управления членами партнеров.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Член партнера.
+        required: true
+      tags:
+      - partner-members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerMember'
+          description: ''
+    patch:
+      operationId: partner_members_partial_update
+      description: API для управления членами партнеров.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Член партнера.
+        required: true
+      tags:
+      - partner-members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerMemberRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerMemberRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerMemberRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerMember'
+          description: ''
+    delete:
+      operationId: partner_members_destroy
+      description: API для управления членами партнеров.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Член партнера.
+        required: true
+      tags:
+      - partner-members
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/partner-members/{id}/activate/:
+    post:
+      operationId: partner_members_activate_create
+      description: Активировать члена партнера.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Член партнера.
+        required: true
+      tags:
+      - partner-members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerMember'
+          description: ''
+  /api/partner-members/{id}/deactivate/:
+    post:
+      operationId: partner_members_deactivate_create
+      description: Деактивировать члена партнера.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Член партнера.
+        required: true
+      tags:
+      - partner-members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerMemberRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerMember'
+          description: ''
+  /api/partners/:
+    get:
+      operationId: partners_list
+      description: |-
+        CRUD API для Partner.
+        - queryset фильтруется по владельцу в get_queryset (использует Partner.objects.for_user)
+        - object-level permissions обеспечиваются IsOwnerOrAdmin
+        - на create/update перехватываем IntegrityError и возвращаем DRF ValidationError
+      parameters:
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: email
+        schema:
+          type: string
+      - in: query
+        name: inn
+        schema:
+          type: string
+      - in: query
+        name: name
+        schema:
+          type: string
+      - in: query
+        name: ogrn
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: phone
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: validated
+        schema:
+          type: boolean
+      tags:
+      - partners
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPartnerList'
+          description: ''
+    post:
+      operationId: partners_create
+      description: |-
+        CRUD API для Partner.
+        - queryset фильтруется по владельцу в get_queryset (использует Partner.objects.for_user)
+        - object-level permissions обеспечиваются IsOwnerOrAdmin
+        - на create/update перехватываем IntegrityError и возвращаем DRF ValidationError
+      tags:
+      - partners
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+          description: ''
+  /api/partners/{id}/:
+    get:
+      operationId: partners_retrieve
+      description: |-
+        CRUD API для Partner.
+        - queryset фильтруется по владельцу в get_queryset (использует Partner.objects.for_user)
+        - object-level permissions обеспечиваются IsOwnerOrAdmin
+        - на create/update перехватываем IntegrityError и возвращаем DRF ValidationError
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+          description: ''
+    put:
+      operationId: partners_update
+      description: |-
+        CRUD API для Partner.
+        - queryset фильтруется по владельцу в get_queryset (использует Partner.objects.for_user)
+        - object-level permissions обеспечиваются IsOwnerOrAdmin
+        - на create/update перехватываем IntegrityError и возвращаем DRF ValidationError
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+          description: ''
+    patch:
+      operationId: partners_partial_update
+      description: |-
+        CRUD API для Partner.
+        - queryset фильтруется по владельцу в get_queryset (использует Partner.objects.for_user)
+        - object-level permissions обеспечиваются IsOwnerOrAdmin
+        - на create/update перехватываем IntegrityError и возвращаем DRF ValidationError
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+          description: ''
+    delete:
+      operationId: partners_destroy
+      description: |-
+        CRUD API для Partner.
+        - queryset фильтруется по владельцу в get_queryset (использует Partner.objects.for_user)
+        - object-level permissions обеспечиваются IsOwnerOrAdmin
+        - на create/update перехватываем IntegrityError и возвращаем DRF ValidationError
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/partners/{id}/create_notification/:
+    post:
+      operationId: partners_create_notification_create
+      description: Создание уведомления для конкретного партнёра
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSerializer'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+  /api/partners/{id}/get_telegram_config/:
+    get:
+      operationId: partners_get_telegram_config_retrieve
+      description: Получение конфигурации Telegram для конкретного партнёра
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerTelegramConfig'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+  /api/partners/{id}/members/:
+    get:
+      operationId: partners_members_retrieve
+      description: Получить всех членов конкретного партнера.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+          description: ''
+  /api/partners/{id}/notifications/:
+    get:
+      operationId: partners_notifications_retrieve
+      description: Получение уведомлений для конкретного партнёра
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationSerializer'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+  /api/partners/{id}/send_partner_notification/:
+    post:
+      operationId: partners_send_partner_notification_create
+      description: Отправка уведомления от имени партнёра (требует настроенную конфигурацию
+        партнёра)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendPartnerNotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendPartnerNotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendPartnerNotificationRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+  /api/partners/{id}/set_telegram_config/:
+    post:
+      operationId: partners_set_telegram_config_create
+      description: Установка/обновление конфигурации Telegram для конкретного партнёра
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerTelegramConfigRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerTelegramConfigRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerTelegramConfigRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerTelegramConfig'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+  /api/partners/{id}/validate_telegram_config/:
+    post:
+      operationId: partners_validate_telegram_config_create
+      description: Валидация конфигурации Telegram для конкретного партнёра
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Партнёр.
+        required: true
+      tags:
+      - partners
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+  /api/partners/stats/:
+    get:
+      operationId: partners_stats_retrieve
+      description: Статистика по партнерам.
+      tags:
+      - partners
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+          description: ''
+  /api/pickup-points/:
+    get:
+      operationId: pickup_points_list
+      description: API для управления пунктами выдачи заказов (ПВЗ).
+      parameters:
+      - in: query
+        name: address
+        schema:
+          type: string
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: name
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: partner
+        schema:
+          type: number
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - pickup-points
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPickupPointList'
+          description: ''
+    post:
+      operationId: pickup_points_create
+      description: API для управления пунктами выдачи заказов (ПВЗ).
+      tags:
+      - pickup-points
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPoint'
+          description: ''
+  /api/pickup-points/{id}/:
+    get:
+      operationId: pickup_points_retrieve
+      description: API для управления пунктами выдачи заказов (ПВЗ).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пункт выдачи заказов.
+        required: true
+      tags:
+      - pickup-points
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPoint'
+          description: ''
+    put:
+      operationId: pickup_points_update
+      description: API для управления пунктами выдачи заказов (ПВЗ).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пункт выдачи заказов.
+        required: true
+      tags:
+      - pickup-points
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPoint'
+          description: ''
+    patch:
+      operationId: pickup_points_partial_update
+      description: API для управления пунктами выдачи заказов (ПВЗ).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пункт выдачи заказов.
+        required: true
+      tags:
+      - pickup-points
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPickupPointRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPickupPointRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPickupPointRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPoint'
+          description: ''
+    delete:
+      operationId: pickup_points_destroy
+      description: API для управления пунктами выдачи заказов (ПВЗ).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пункт выдачи заказов.
+        required: true
+      tags:
+      - pickup-points
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pickup-points/{id}/activate/:
+    post:
+      operationId: pickup_points_activate_create
+      description: Активировать ПВЗ.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пункт выдачи заказов.
+        required: true
+      tags:
+      - pickup-points
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPoint'
+          description: ''
+  /api/pickup-points/{id}/deactivate/:
+    post:
+      operationId: pickup_points_deactivate_create
+      description: Деактивировать ПВЗ.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пункт выдачи заказов.
+        required: true
+      tags:
+      - pickup-points
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PickupPointRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPoint'
+          description: ''
+  /api/pickup-points/active/:
+    get:
+      operationId: pickup_points_active_retrieve
+      description: Получить только активные ПВЗ.
+      tags:
+      - pickup-points
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPoint'
+          description: ''
+  /api/user-status/:
+    get:
+      operationId: user_status_retrieve
+      description: |-
+        Проверка статуса пользователя после входа.
+        Использует централизованную логику фильтрации через .for_user()
+      tags:
+      - user-status
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - basicAuth: []
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStatus'
+          description: ''
+components:
+  schemas:
+    ChannelEnum:
+      enum:
+      - email
+      - telegram
+      - sms
+      type: string
+      description: |-
+        * `email` - Email
+        * `telegram` - Telegram
+        * `sms` - SMS
+    CreateNotificationRequest:
+      type: object
+      description: Сериализатор для создания уведомления (без partner)
+      properties:
+        channel:
+          $ref: '#/components/schemas/ChannelEnum'
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 255
+        message:
+          type: string
+          minLength: 1
+        recipient:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - channel
+      - message
+      - recipient
+      - subject
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+      required:
+      - password
+    PaginatedPartnerApplicationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerApplication'
+    PaginatedPartnerList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Partner'
+    PaginatedPartnerMemberList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerMember'
+    PaginatedPickupPointList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PickupPoint'
+    Partner:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          nullable: true
+          title: Название
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата создания
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата обновления
+        email:
+          type: string
+          format: email
+          nullable: true
+          title: Адрес электронной почты
+          maxLength: 254
+        phone:
+          type: string
+          nullable: true
+          title: Телефон
+          maxLength: 100
+        legal_form:
+          type: string
+          nullable: true
+          title: ОРФ
+          maxLength: 100
+        inn:
+          type: string
+          title: ИНН
+          maxLength: 12
+        ogrn:
+          type: string
+          title: ОГРН
+          maxLength: 15
+        kpp:
+          type: string
+          nullable: true
+          title: КПП
+          maxLength: 9
+        address:
+          type: string
+          nullable: true
+          title: Адрес
+        validated:
+          type: boolean
+          readOnly: true
+          title: Проверено
+        validated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Время проверки
+        owner:
+          type: integer
+          readOnly: true
+          title: Владелец
+      required:
+      - created_at
+      - id
+      - inn
+      - ogrn
+      - owner
+      - updated_at
+      - validated
+      - validated_at
+    PartnerApplication:
+      type: object
+      description: Сериализатор для просмотра заявки.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_name:
+          type: string
+          title: Название компании
+          maxLength: 255
+        inn:
+          type: string
+          title: ИНН
+          maxLength: 12
+        ogrn:
+          type: string
+          title: ОГРН
+          maxLength: 15
+        contact_email:
+          type: string
+          format: email
+          title: Контактный email
+          maxLength: 254
+        contact_phone:
+          type: string
+          title: Контактный телефон
+          maxLength: 100
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          title: Статус
+        processed_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: Дата обработки
+        rejection_reason:
+          type: string
+          nullable: true
+          title: Причина отклонения
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата создания
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата обновления
+        user:
+          type: integer
+          title: Пользователь
+        processed_by:
+          type: integer
+          nullable: true
+          title: Обработана администратором
+        partner:
+          type: integer
+          nullable: true
+          title: Созданный партнёр
+      required:
+      - company_name
+      - contact_email
+      - contact_phone
+      - created_at
+      - id
+      - inn
+      - ogrn
+      - updated_at
+      - user
+    PartnerApplicationCreate:
+      type: object
+      description: Сериализатор для создания заявки.
+      properties:
+        company_name:
+          type: string
+          title: Название компании
+          maxLength: 255
+        inn:
+          type: string
+          title: ИНН
+          maxLength: 12
+        ogrn:
+          type: string
+          title: ОГРН
+          maxLength: 15
+        contact_email:
+          type: string
+          format: email
+          title: Контактный email
+          maxLength: 254
+        contact_phone:
+          type: string
+          title: Контактный телефон
+          maxLength: 100
+      required:
+      - company_name
+      - contact_email
+      - contact_phone
+      - inn
+      - ogrn
+    PartnerApplicationCreateRequest:
+      type: object
+      description: Сериализатор для создания заявки.
+      properties:
+        company_name:
+          type: string
+          minLength: 1
+          title: Название компании
+          maxLength: 255
+        inn:
+          type: string
+          minLength: 1
+          title: ИНН
+          maxLength: 12
+        ogrn:
+          type: string
+          minLength: 1
+          title: ОГРН
+          maxLength: 15
+        contact_email:
+          type: string
+          format: email
+          minLength: 1
+          title: Контактный email
+          maxLength: 254
+        contact_phone:
+          type: string
+          minLength: 1
+          title: Контактный телефон
+          maxLength: 100
+      required:
+      - company_name
+      - contact_email
+      - contact_phone
+      - inn
+      - ogrn
+    PartnerApplicationUserUpdate:
+      type: object
+      description: Сериализатор для обновления заявки пользователем - только основные
+        поля.
+      properties:
+        company_name:
+          type: string
+          title: Название компании
+          maxLength: 255
+        inn:
+          type: string
+          title: ИНН
+          maxLength: 12
+        ogrn:
+          type: string
+          title: ОГРН
+          maxLength: 15
+        contact_email:
+          type: string
+          format: email
+          title: Контактный email
+          maxLength: 254
+        contact_phone:
+          type: string
+          title: Контактный телефон
+          maxLength: 100
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+          title: Статус
+      required:
+      - company_name
+      - contact_email
+      - contact_phone
+      - inn
+      - ogrn
+      - status
+    PartnerApplicationUserUpdateRequest:
+      type: object
+      description: Сериализатор для обновления заявки пользователем - только основные
+        поля.
+      properties:
+        company_name:
+          type: string
+          minLength: 1
+          title: Название компании
+          maxLength: 255
+        inn:
+          type: string
+          minLength: 1
+          title: ИНН
+          maxLength: 12
+        ogrn:
+          type: string
+          minLength: 1
+          title: ОГРН
+          maxLength: 15
+        contact_email:
+          type: string
+          format: email
+          minLength: 1
+          title: Контактный email
+          maxLength: 254
+        contact_phone:
+          type: string
+          minLength: 1
+          title: Контактный телефон
+          maxLength: 100
+      required:
+      - company_name
+      - contact_email
+      - contact_phone
+      - inn
+      - ogrn
+    PartnerMember:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          nullable: true
+          title: Название
+          maxLength: 255
+        partner:
+          type: integer
+          title: Партнер
+          description: Партнерская организация, к которой относится сотрудник
+        partner_name:
+          type: string
+          readOnly: true
+          title: Название партнера
+        user:
+          type: integer
+          nullable: true
+          title: Пользователь системы
+          description: Привязка к пользователю системы (если есть аккаунт)
+        user_email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+          title: Email пользователя
+        user_username:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Логин пользователя
+        employee_id:
+          type: string
+          nullable: true
+          title: Табельный номер
+          description: Внутренний идентификатор сотрудника в партнерской организации
+          maxLength: 100
+        work_email:
+          type: string
+          format: email
+          nullable: true
+          title: Рабочий email
+          description: Корпоративная почта сотрудника
+          maxLength: 254
+        work_phone:
+          type: string
+          nullable: true
+          title: Рабочий телефон
+          description: Корпоративный телефон
+          maxLength: 100
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Роль в партнерской организации
+          description: |-
+            Определяет уровень доступа и права в системе
+
+            * `employee` - Сотрудник
+            * `manager` - Менеджер
+            * `director` - Директор
+            * `accountant` - Бухгалтер
+            * `admin` - Администратор партнера
+        role_display:
+          type: string
+          readOnly: true
+          title: Роль (отображение)
+        can_manage_members:
+          type: boolean
+          title: Может управлять членами партнера
+          description: Может добавлять/удалять других сотрудников партнера
+        can_view_finance:
+          type: boolean
+          title: Может просматривать финансы
+          description: Доступ к финансовой информации партнера
+        is_active:
+          type: boolean
+          title: Активный сотрудник
+          description: Сотрудник активен в организации
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата создания
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата обновления
+      required:
+      - created_at
+      - id
+      - partner
+      - partner_name
+      - role_display
+      - updated_at
+      - user_email
+      - user_username
+    PartnerMemberRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          title: Название
+          maxLength: 255
+        partner:
+          type: integer
+          title: Партнер
+          description: Партнерская организация, к которой относится сотрудник
+        user:
+          type: integer
+          nullable: true
+          title: Пользователь системы
+          description: Привязка к пользователю системы (если есть аккаунт)
+        employee_id:
+          type: string
+          nullable: true
+          title: Табельный номер
+          description: Внутренний идентификатор сотрудника в партнерской организации
+          maxLength: 100
+        work_email:
+          type: string
+          format: email
+          nullable: true
+          title: Рабочий email
+          description: Корпоративная почта сотрудника
+          maxLength: 254
+        work_phone:
+          type: string
+          nullable: true
+          title: Рабочий телефон
+          description: Корпоративный телефон
+          maxLength: 100
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Роль в партнерской организации
+          description: |-
+            Определяет уровень доступа и права в системе
+
+            * `employee` - Сотрудник
+            * `manager` - Менеджер
+            * `director` - Директор
+            * `accountant` - Бухгалтер
+            * `admin` - Администратор партнера
+        can_manage_members:
+          type: boolean
+          title: Может управлять членами партнера
+          description: Может добавлять/удалять других сотрудников партнера
+        can_view_finance:
+          type: boolean
+          title: Может просматривать финансы
+          description: Доступ к финансовой информации партнера
+        is_active:
+          type: boolean
+          title: Активный сотрудник
+          description: Сотрудник активен в организации
+      required:
+      - partner
+    PartnerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          title: Название
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          nullable: true
+          title: Адрес электронной почты
+          maxLength: 254
+        phone:
+          type: string
+          nullable: true
+          title: Телефон
+          maxLength: 100
+        legal_form:
+          type: string
+          nullable: true
+          title: ОРФ
+          maxLength: 100
+        inn:
+          type: string
+          minLength: 1
+          title: ИНН
+          maxLength: 12
+        ogrn:
+          type: string
+          minLength: 1
+          title: ОГРН
+          maxLength: 15
+        kpp:
+          type: string
+          nullable: true
+          title: КПП
+          maxLength: 9
+        address:
+          type: string
+          nullable: true
+          title: Адрес
+      required:
+      - inn
+      - ogrn
+    PartnerTelegramConfig:
+      type: object
+      description: Сериализатор для настройки telegram конфигурации партнёром
+      properties:
+        bot_token:
+          type: string
+          description: Токен бота партнёра
+          maxLength: 255
+        chat_id:
+          type: string
+          description: ID чата для уведомлений
+          maxLength: 255
+        is_active:
+          type: boolean
+        is_default:
+          type: boolean
+          description: Использовать по умолчанию
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        validated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - bot_token
+      - chat_id
+      - created_at
+      - updated_at
+      - validated_at
+    PartnerTelegramConfigRequest:
+      type: object
+      description: Сериализатор для настройки telegram конфигурации партнёром
+      properties:
+        bot_token:
+          type: string
+          minLength: 1
+          description: Токен бота партнёра
+          maxLength: 255
+        chat_id:
+          type: string
+          minLength: 1
+          description: ID чата для уведомлений
+          maxLength: 255
+        is_active:
+          type: boolean
+        is_default:
+          type: boolean
+          description: Использовать по умолчанию
+      required:
+      - bot_token
+      - chat_id
+    PasswordChangeRequest:
+      type: object
+      properties:
+        old_password:
+          type: string
+          minLength: 1
+          maxLength: 128
+        new_password1:
+          type: string
+          minLength: 1
+          maxLength: 128
+        new_password2:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - new_password1
+      - new_password2
+      - old_password
+    PasswordResetConfirmRequest:
+      type: object
+      description: Serializer for confirming a password reset attempt.
+      properties:
+        new_password1:
+          type: string
+          minLength: 1
+          maxLength: 128
+        new_password2:
+          type: string
+          minLength: 1
+          maxLength: 128
+        uid:
+          type: string
+          minLength: 1
+        token:
+          type: string
+          minLength: 1
+      required:
+      - new_password1
+      - new_password2
+      - token
+      - uid
+    PasswordResetRequest:
+      type: object
+      description: Serializer for requesting a password reset e-mail.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    PatchedPartnerApplicationUserUpdateRequest:
+      type: object
+      description: Сериализатор для обновления заявки пользователем - только основные
+        поля.
+      properties:
+        company_name:
+          type: string
+          minLength: 1
+          title: Название компании
+          maxLength: 255
+        inn:
+          type: string
+          minLength: 1
+          title: ИНН
+          maxLength: 12
+        ogrn:
+          type: string
+          minLength: 1
+          title: ОГРН
+          maxLength: 15
+        contact_email:
+          type: string
+          format: email
+          minLength: 1
+          title: Контактный email
+          maxLength: 254
+        contact_phone:
+          type: string
+          minLength: 1
+          title: Контактный телефон
+          maxLength: 100
+    PatchedPartnerMemberRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          title: Название
+          maxLength: 255
+        partner:
+          type: integer
+          title: Партнер
+          description: Партнерская организация, к которой относится сотрудник
+        user:
+          type: integer
+          nullable: true
+          title: Пользователь системы
+          description: Привязка к пользователю системы (если есть аккаунт)
+        employee_id:
+          type: string
+          nullable: true
+          title: Табельный номер
+          description: Внутренний идентификатор сотрудника в партнерской организации
+          maxLength: 100
+        work_email:
+          type: string
+          format: email
+          nullable: true
+          title: Рабочий email
+          description: Корпоративная почта сотрудника
+          maxLength: 254
+        work_phone:
+          type: string
+          nullable: true
+          title: Рабочий телефон
+          description: Корпоративный телефон
+          maxLength: 100
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Роль в партнерской организации
+          description: |-
+            Определяет уровень доступа и права в системе
+
+            * `employee` - Сотрудник
+            * `manager` - Менеджер
+            * `director` - Директор
+            * `accountant` - Бухгалтер
+            * `admin` - Администратор партнера
+        can_manage_members:
+          type: boolean
+          title: Может управлять членами партнера
+          description: Может добавлять/удалять других сотрудников партнера
+        can_view_finance:
+          type: boolean
+          title: Может просматривать финансы
+          description: Доступ к финансовой информации партнера
+        is_active:
+          type: boolean
+          title: Активный сотрудник
+          description: Сотрудник активен в организации
+    PatchedPartnerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          title: Название
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          nullable: true
+          title: Адрес электронной почты
+          maxLength: 254
+        phone:
+          type: string
+          nullable: true
+          title: Телефон
+          maxLength: 100
+        legal_form:
+          type: string
+          nullable: true
+          title: ОРФ
+          maxLength: 100
+        inn:
+          type: string
+          minLength: 1
+          title: ИНН
+          maxLength: 12
+        ogrn:
+          type: string
+          minLength: 1
+          title: ОГРН
+          maxLength: 15
+        kpp:
+          type: string
+          nullable: true
+          title: КПП
+          maxLength: 9
+        address:
+          type: string
+          nullable: true
+          title: Адрес
+    PatchedPickupPointRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          title: Название
+          maxLength: 255
+        partner:
+          type: integer
+          title: Партнер
+          description: Партнерская организация, которой принадлежит ПВЗ
+        address:
+          type: string
+          minLength: 1
+          title: Адрес
+          description: Полный адрес пункта выдачи заказов
+        location_details:
+          type: string
+          nullable: true
+          title: Расположение
+          description: 'Детали расположения (например: цокольный этаж, 1-ый этаж)'
+          maxLength: 255
+        work_schedule:
+          type: string
+          minLength: 1
+          title: График работы
+          description: 'График работы ПВЗ (например: с 9:00 до 21:00)'
+          maxLength: 255
+        phone:
+          type: string
+          nullable: true
+          title: Телефон
+          description: Контактный телефон ПВЗ
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          nullable: true
+          title: Адрес электронной почты
+          description: Контактный email ПВЗ
+          maxLength: 254
+        is_active:
+          type: boolean
+          title: Активный
+          description: ПВЗ активен для использования
+    PatchedUserDetailsRequest:
+      type: object
+      description: User model w/o password
+      properties:
+        username:
+          type: string
+          minLength: 1
+          title: Имя пользователя
+          description: Обязательное поле. Не более 150 символов. Только буквы, цифры
+            и символы @/./+/-/_.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          title: Имя
+          maxLength: 150
+        last_name:
+          type: string
+          title: Фамилия
+          maxLength: 150
+    PickupPoint:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          nullable: true
+          title: Название
+          maxLength: 255
+        partner:
+          type: integer
+          title: Партнер
+          description: Партнерская организация, которой принадлежит ПВЗ
+        partner_name:
+          type: string
+          readOnly: true
+          title: Название партнера
+        address:
+          type: string
+          title: Адрес
+          description: Полный адрес пункта выдачи заказов
+        location_details:
+          type: string
+          nullable: true
+          title: Расположение
+          description: 'Детали расположения (например: цокольный этаж, 1-ый этаж)'
+          maxLength: 255
+        work_schedule:
+          type: string
+          title: График работы
+          description: 'График работы ПВЗ (например: с 9:00 до 21:00)'
+          maxLength: 255
+        phone:
+          type: string
+          nullable: true
+          title: Телефон
+          description: Контактный телефон ПВЗ
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          nullable: true
+          title: Адрес электронной почты
+          description: Контактный email ПВЗ
+          maxLength: 254
+        is_active:
+          type: boolean
+          title: Активный
+          description: ПВЗ активен для использования
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата создания
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата обновления
+      required:
+      - address
+      - created_at
+      - id
+      - partner
+      - partner_name
+      - updated_at
+      - work_schedule
+    PickupPointRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          title: Название
+          maxLength: 255
+        partner:
+          type: integer
+          title: Партнер
+          description: Партнерская организация, которой принадлежит ПВЗ
+        address:
+          type: string
+          minLength: 1
+          title: Адрес
+          description: Полный адрес пункта выдачи заказов
+        location_details:
+          type: string
+          nullable: true
+          title: Расположение
+          description: 'Детали расположения (например: цокольный этаж, 1-ый этаж)'
+          maxLength: 255
+        work_schedule:
+          type: string
+          minLength: 1
+          title: График работы
+          description: 'График работы ПВЗ (например: с 9:00 до 21:00)'
+          maxLength: 255
+        phone:
+          type: string
+          nullable: true
+          title: Телефон
+          description: Контактный телефон ПВЗ
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          nullable: true
+          title: Адрес электронной почты
+          description: Контактный email ПВЗ
+          maxLength: 254
+        is_active:
+          type: boolean
+          title: Активный
+          description: ПВЗ активен для использования
+      required:
+      - address
+      - partner
+      - work_schedule
+    RestAuthDetail:
+      type: object
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    RoleEnum:
+      enum:
+      - employee
+      - manager
+      - director
+      - accountant
+      - admin
+      type: string
+      description: |-
+        * `employee` - Сотрудник
+        * `manager` - Менеджер
+        * `director` - Директор
+        * `accountant` - Бухгалтер
+        * `admin` - Администратор партнера
+    SendPartnerNotificationRequest:
+      type: object
+      description: Сериализатор для отправки уведомления от имени партнёра
+      properties:
+        message:
+          type: string
+          minLength: 1
+          description: Сообщение для отправки
+      required:
+      - message
+    StatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Ожидает рассмотрения
+        * `approved` - Одобрена
+        * `rejected` - Отклонена
+    Token:
+      type: object
+      description: Serializer for Token model.
+      properties:
+        key:
+          type: string
+          title: Ключ
+          maxLength: 40
+      required:
+      - key
+    UserDetails:
+      type: object
+      description: User model w/o password
+      properties:
+        pk:
+          type: integer
+          readOnly: true
+          title: ID
+        username:
+          type: string
+          title: Имя пользователя
+          description: Обязательное поле. Не более 150 символов. Только буквы, цифры
+            и символы @/./+/-/_.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Адрес электронной почты
+        first_name:
+          type: string
+          title: Имя
+          maxLength: 150
+        last_name:
+          type: string
+          title: Фамилия
+          maxLength: 150
+      required:
+      - email
+      - pk
+      - username
+    UserDetailsRequest:
+      type: object
+      description: User model w/o password
+      properties:
+        username:
+          type: string
+          minLength: 1
+          title: Имя пользователя
+          description: Обязательное поле. Не более 150 символов. Только буквы, цифры
+            и символы @/./+/-/_.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          title: Имя
+          maxLength: 150
+        last_name:
+          type: string
+          title: Фамилия
+          maxLength: 150
+      required:
+      - username
+    UserStatus:
+      type: object
+      description: Сериализатор для статуса пользователя.
+      properties:
+        has_partners:
+          type: boolean
+        has_memberships:
+          type: boolean
+        has_memberships_active:
+          type: boolean
+          default: false
+        has_pending_application:
+          type: boolean
+        message:
+          type: string
+        partners:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - has_memberships
+      - has_partners
+      - has_pending_application
+      - message
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

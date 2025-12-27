@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 from config.admin import admin_site
-from .models import Partner, PartnerMember, PartnerApplication
+from .models import Partner, PartnerMember, PartnerApplication, PickupPoint
 
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -175,13 +175,14 @@ class PartnerAdmin(admin.ModelAdmin):
 
 @admin.register(PartnerMember, site=admin_site)
 class PartnerMemberAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'partner_link', 'user_link', 'role_display', 'is_active', 'created_at']
+    list_display = ['id', 'name', 'partner_link', 'user_link', 'role_display', 'pickup_point_link', 'is_active', 'created_at']
     list_filter = [
         ('partner', admin.RelatedOnlyFieldListFilter),
         'role',
         'is_active',
         'can_manage_members',
         'can_view_finance',
+        ('pickup_point', admin.RelatedOnlyFieldListFilter),
         ('created_at', admin.DateFieldListFilter)
     ]
     search_fields = [
@@ -208,6 +209,10 @@ class PartnerMemberAdmin(admin.ModelAdmin):
         }),
         (_('Роли и права'), {
             'fields': ['role', 'can_manage_members', 'can_view_finance', 'is_active']
+        }),
+        (_('Привязка к пункту выдачи'), {
+            'fields': ['pickup_point'],
+            'classes': ['collapse']
         }),
         (_('Даты'), {
             'fields': ['created_at', 'updated_at'],
@@ -244,6 +249,16 @@ class PartnerMemberAdmin(admin.ModelAdmin):
     role_display.short_description = _("Роль")
     role_display.admin_order_field = 'role'
 
+    def pickup_point_link(self, obj):
+        """Ссылка на пункт выдачи"""
+        if obj.pickup_point:
+            return format_html('<a href="{}">{}</a>',
+                               f"/admin/partners/pickuppoint/{obj.pickup_point.id}/change/",
+                               obj.pickup_point.name)
+        return "-"
+    pickup_point_link.short_description = _("Пункт выдачи")
+    pickup_point_link.admin_order_field = 'pickup_point__name'
+
     # Действия в админке
     actions = ['activate_members', 'deactivate_members', 'grant_management_rights', 'revoke_management_rights']
 
@@ -266,3 +281,71 @@ class PartnerMemberAdmin(admin.ModelAdmin):
         updated = queryset.update(can_manage_members=False)
         self.message_user(request, f"Отозваны права управления: {updated} членам")
     revoke_management_rights.short_description = _("Отозвать права управления")
+
+
+@admin.register(PickupPoint, site=admin_site)
+class PickupPointAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'partner_link', 'address', 'is_active', 'created_at']
+    list_filter = [
+        ('partner', admin.RelatedOnlyFieldListFilter),
+        'is_active',
+        ('created_at', admin.DateFieldListFilter)
+    ]
+    search_fields = [
+        'name',
+        'address',
+        'location_details',
+        'work_schedule',
+        'partner__name',
+        'partner__inn'
+    ]
+    list_select_related = ['partner']
+
+    # Автодополнение для поля партнера
+    autocomplete_fields = ['partner']
+
+    # Поля в режиме редактирования
+    fieldsets = [
+        (None, {
+            'fields': ['partner', 'name']
+        }),
+        (_('Адрес и расположение'), {
+            'fields': ['address', 'location_details']
+        }),
+        (_('Операционная информация'), {
+            'fields': ['work_schedule', 'phone', 'email']
+        }),
+        (_('Статус'), {
+            'fields': ['is_active']
+        }),
+        (_('Даты'), {
+            'fields': ['created_at', 'updated_at'],
+            'classes': ['collapse']
+        }),
+    ]
+
+    # Только для чтения поля
+    readonly_fields = ['created_at', 'updated_at']
+
+    def partner_link(self, obj):
+        """Ссылка на партнера"""
+        if obj.partner:
+            return format_html('<a href="{}">{}</a>',
+                               f"/admin/partners/partner/{obj.partner.id}/change/",
+                               obj.partner.name)
+        return "-"
+    partner_link.short_description = _("Партнер")
+    partner_link.admin_order_field = 'partner__name'
+
+    # Действия в админке
+    actions = ['activate_pickup_points', 'deactivate_pickup_points']
+
+    def activate_pickup_points(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f"Активировано: {updated} пунктов выдачи")
+    activate_pickup_points.short_description = _("Активировать выбранные")
+
+    def deactivate_pickup_points(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f"Деактивировано: {updated} пунктов выдачи")
+    deactivate_pickup_points.short_description = _("Деактивировать выбранные")

@@ -34,9 +34,10 @@ class PartnerMemberViewSet(viewsets.ModelViewSet):
     def get_queryset(self) -> "PartnerMemberQuerySet":  # type: ignore[override]
         user = self.request.user
         return PartnerMember.objects.for_user(user) # type: ignore[arg-type]
-    
+
     def perform_create(self, serializer):
         partner = serializer.validated_data.get('partner')
+        pickup_point = serializer.validated_data.get('pickup_point')
         request_user = self.request.user
 
         # Проверяем права на добавление члена с использованием централизованной логики
@@ -44,6 +45,38 @@ class PartnerMemberViewSet(viewsets.ModelViewSet):
             raise DRFValidationError({
                 "partner": _("Нет прав для добавления членов в этого партнера")
             })
+
+        # Проверяем, что ПВЗ принадлежит тому же партнеру через централизованную логику
+        if pickup_point:
+            from apps.registry.partners.permissions import validate_partner_member_pickup_point_relationship
+            if not validate_partner_member_pickup_point_relationship(partner, pickup_point):
+                raise DRFValidationError({
+                    "pickup_point": _("Пункт выдачи должен принадлежать тому же партнеру")
+                })
+
+        serializer.save()
+
+    def perform_update(self, serializer):
+        pickup_point = serializer.validated_data.get('pickup_point')
+        request_user = self.request.user
+
+        # Проверяем права на обновление конкретной записи
+        member = self.get_object()
+        from apps.registry.partners.permissions import check_partner_member_access
+        if not check_partner_member_access(request_user, member):
+            raise DRFValidationError({
+                "detail": _("Нет прав для обновления этого члена партнера")
+            })
+
+        # Проверяем, что ПВЗ принадлежит тому же партнеру через централизованную логику
+        # Используем текущего партнера или нового, если он изменяется
+        partner = serializer.validated_data.get('partner', member.partner)
+        if 'pickup_point' in serializer.validated_data and pickup_point is not None:
+            from apps.registry.partners.permissions import validate_partner_member_pickup_point_relationship
+            if not validate_partner_member_pickup_point_relationship(partner, pickup_point):
+                raise DRFValidationError({
+                    "pickup_point": _("Пункт выдачи должен принадлежать тому же партнеру")
+                })
 
         serializer.save()
     
