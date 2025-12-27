@@ -1,0 +1,10 @@
+Django
+djangorestframework
+drf-spectacular
+django-filter
+django-cors-headers
+dj-rest-auth
+requests
+google-auth
+python-dotenv
+celery
