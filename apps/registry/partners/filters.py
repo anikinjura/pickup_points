@@ -35,6 +35,7 @@ class PartnerMemberFilter(filters.FilterSet):
 class PickupPointFilter(filters.FilterSet):
     name = django_filters.CharFilter(lookup_expr='icontains')
     address = django_filters.CharFilter(lookup_expr='icontains')
+    address_exact = django_filters.CharFilter(field_name='address', lookup_expr='exact')
     partner = django_filters.NumberFilter(field_name='partner_id')
     is_active = django_filters.BooleanFilter()
     created_after = django_filters.DateFilter(field_name='created_at', lookup_expr='gte')
@@ -42,4 +43,4 @@ class PickupPointFilter(filters.FilterSet):
 
     class Meta:
         model = PickupPoint
-        fields = ['name', 'address', 'partner', 'is_active']
+        fields = ['name', 'address', 'address_exact', 'partner', 'is_active']

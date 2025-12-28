@@ -177,3 +177,62 @@ class PickupPointAPITest(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(PickupPoint.objects.count(), 0)
+
+    def test_address_search_functionality(self):
+        """Тест функциональности поиска по адресу."""
+        # Сначала пометим партнера как проверенного
+        self.partner.validated = True
+        self.partner.save()
+
+        # Создаем несколько ПВЗ с разными адресами для тестирования поиска
+        PickupPoint.objects.create(
+            name='ПВЗ Центральный',
+            partner=self.partner,
+            address='г. Москва, ул. Тверская, д. 1',
+            work_schedule='с 9:00 до 21:00',
+            is_active=True
+        )
+
+        PickupPoint.objects.create(
+            name='ПВЗ Северный',
+            partner=self.partner,
+            address='г. Москва, ул. Ленинградское шоссе, д. 25',
+            work_schedule='с 10:00 до 20:00',
+            is_active=True
+        )
+
+        PickupPoint.objects.create(
+            name='ПВЗ Южный',
+            partner=self.partner,
+            address='г. Санкт-Петербург, ул. Невский, д. 10',
+            work_schedule='с 8:00 до 22:00',
+            is_active=True
+        )
+
+        # Тестируем общий поиск по слову "Москва"
+        response = self.client.get(reverse('pickup-point-list') + '?search=Москва')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        moscow_count = len([pp for pp in results if 'Москва' in pp['address']])
+        self.assertGreaterEqual(moscow_count, 2)  # Должно быть как минимум 2 ПВЗ в Москве
+
+        # Тестируем фильтрацию по частичному адресу
+        response = self.client.get(reverse('pickup-point-list') + '?address=Тверская')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        tverskaya_count = len([pp for pp in results if 'Тверская' in pp['address']])
+        self.assertEqual(tverskaya_count, 1)  # Должен быть 1 ПВЗ с Тверской
+
+        # Тестируем фильтрацию по городу
+        response = self.client.get(reverse('pickup-point-list') + '?address__icontains=Санкт')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        spb_count = len([pp for pp in results if 'Санкт' in pp['address']])
+        self.assertEqual(spb_count, 1)  # Должен быть 1 ПВЗ в СПб
+
+        # Тестируем точный поиск по адресу
+        response = self.client.get(reverse('pickup-point-list') + '?address_exact=г. Москва, ул. Тверская, д. 1')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        exact_count = len([pp for pp in results if pp['address'] == 'г. Москва, ул. Тверская, д. 1'])
+        self.assertEqual(exact_count, 1)  # Должен быть 1 ПВЗ с точным адресом
