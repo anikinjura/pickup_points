@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.registry.partners.models.partner import Partner
 from apps.registry.partners.models.partner_member import PartnerMember
 from apps.registry.partners.models.partner_application import PartnerApplication
+from apps.registry.partners.models.pickup_point import PickupPoint
 from apps.registry.partners.serializers.application_serializers import UserStatusSerializer
 
 
@@ -25,6 +26,7 @@ class UserStatusView(GenericAPIView):
         user_partners = Partner.objects.for_user(user)
         user_memberships = PartnerMember.objects.for_user(user)
         user_applications = PartnerApplication.objects.for_user(user)
+        user_pickup_points = PickupPoint.objects.for_user(user)
 
         # Проверяем наличие активной заявки у пользователя
         has_pending_application = user_applications.filter(status='pending').exists()
@@ -52,7 +54,9 @@ class UserStatusView(GenericAPIView):
                     'inn': membership.partner.inn,
                     'role': membership.get_role_display(),  # Используем отображаемое имя роли
                     'created_at': membership.created_at,
-                    'is_active': membership.is_active  # Добавим статус активности
+                    'is_active': membership.is_active,  # Добавим статус активности
+                    'pickup_point_id': membership.pickup_point.id if membership.pickup_point else None,
+                    'pickup_point_name': membership.pickup_point.name if membership.pickup_point else None,
                 })
 
         # Формируем сообщение
@@ -83,8 +87,31 @@ class UserStatusView(GenericAPIView):
             'has_memberships': has_any_memberships,  # Любой статус членства
             'has_memberships_active': has_active_memberships,  # Только активные
             'has_pending_application': has_pending_application,
+            'has_pickup_points': user_pickup_points.exists(),
+            'pickup_points_count': user_pickup_points.count(),
             'message': message,
             'partners': all_partners if all_partners else None,
+            'user_info': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'date_joined': user.date_joined,
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+            },
+            'available_pickup_points': [
+                {
+                    'id': pp.id,
+                    'name': pp.name,
+                    'partner_id': pp.partner.id,
+                    'partner_name': pp.partner.name,
+                    'address': pp.address,
+                    'is_active': pp.is_active
+                }
+                for pp in user_pickup_points
+            ] if user_pickup_points.exists() else []
         }
 
         serializer = self.get_serializer()

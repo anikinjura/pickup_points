@@ -76,11 +76,27 @@ class PartnerApplicationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UserStatusUserInfoSerializer(serializers.Serializer):
+    """Сериализатор для информации о пользователе в UserStatus."""
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.EmailField()
+    first_name = serializers.CharField(allow_blank=True)
+    last_name = serializers.CharField(allow_blank=True)
+    date_joined = serializers.DateTimeField()
+    is_staff = serializers.BooleanField()
+    is_superuser = serializers.BooleanField()
+
+
 class UserStatusSerializer(serializers.Serializer):
     """Сериализатор для статуса пользователя."""
     has_partners = serializers.BooleanField()
     has_memberships = serializers.BooleanField()
     has_memberships_active = serializers.BooleanField(required=False, default=False)  # Новое поле
     has_pending_application = serializers.BooleanField()
+    has_pickup_points = serializers.BooleanField(required=False)
+    pickup_points_count = serializers.IntegerField(required=False)
     message = serializers.CharField()
     partners = serializers.ListField(child=serializers.DictField(), required=False)
+    user_info = UserStatusUserInfoSerializer(required=False)
+    available_pickup_points = serializers.ListField(child=serializers.DictField(), required=False)

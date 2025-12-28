@@ -215,3 +215,68 @@ class PartnerViewSetTest(TestCase):
         # Проверяем, что owner не изменился
         self.partner1.refresh_from_db()
         self.assertEqual(self.partner1.owner, self.user1)
+
+
+class UserStatusViewTest(TestCase):
+    def setUp(self):
+        """Настройка тестовых данных для UserStatusView"""
+        self.client = APIClient()
+
+        # Создаем пользователя
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123',
+            first_name='Test',
+            last_name='User'
+        )
+
+        # Создаем партнера
+        self.partner = Partner.objects.create(
+            name='ООО Тест',
+            owner=self.user,
+            inn='1234567890',
+            ogrn='1234567890123',
+            email='test@example.com'
+        )
+
+    def test_user_status_authenticated(self):
+        """Тест эндпоинта user-status для аутентифицированного пользователя"""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(reverse('user-status'))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Проверяем наличие всех ожидаемых полей
+        expected_fields = [
+            'has_partners',
+            'has_memberships',
+            'has_memberships_active',
+            'has_pending_application',
+            'has_pickup_points',
+            'pickup_points_count',
+            'message',
+            'partners',
+            'user_info',
+            'available_pickup_points'
+        ]
+
+        for field in expected_fields:
+            self.assertIn(field, response.data, f'Поле {field} отсутствует в ответе')
+
+        # Проверяем, что user_info содержит ожидаемые поля
+        user_info = response.data['user_info']
+        expected_user_fields = ['id', 'username', 'email', 'first_name', 'last_name', 'date_joined', 'is_staff', 'is_superuser']
+        for field in expected_user_fields:
+            self.assertIn(field, user_info, f'Поле {field} отсутствует в user_info')
+
+        # Проверяем, что у пользователя есть партнер
+        self.assertTrue(response.data['has_partners'])
+        self.assertEqual(response.data['user_info']['username'], 'testuser')
+        self.assertEqual(response.data['user_info']['email'], 'test@example.com')
+
+        # Проверяем, что партнер возвращается с правильной информацией
+        partners = response.data['partners']
+        self.assertEqual(len(partners), 1)
+        self.assertEqual(partners[0]['name'], 'ООО Тест')
+        self.assertEqual(partners[0]['role'], 'owner')
